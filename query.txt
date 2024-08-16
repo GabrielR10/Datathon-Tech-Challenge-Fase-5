@@ -1,0 +1,189 @@
+CREATE OR REPLACE TABLE GOVERNANCA_TEMP.POS_TB_FINAL AS
+
+SELECT A.IdAluno,
+       A.NomeAluno,
+       A.Sexo,
+       A.EstadoCivil,
+       DATE(IF(A.DataNascimento = 'M',null, A.DataNascimento)) AS DataNascimento,
+       A.IdResponsavel,
+       B.NomeResponsavel,
+       DATE(b.DataNascimento) AS DataNascimentoResponsavel,
+       C.TipoResponsavel,
+       A.CorRaca,
+
+       CASE WHEN A.StDeficienciaCegueira IS TRUE THEN 1
+            WHEN A.StDeficienciaBaixaVisao IS TRUE THEN 1
+            WHEN A.StDeficienciaSurdez IS TRUE THEN 1
+            WHEN A.StDeficienciaAuditiva IS TRUE THEN 1
+            WHEN A.StDeficienciaFisica IS TRUE THEN 1
+            WHEN A.StDeficienciaSurdoCegueira IS TRUE THEN 1
+            WHEN A.StDeficienciaMental IS TRUE THEN 1
+            WHEN A.StDeficienciaMultipla IS TRUE THEN 1
+            WHEN A.StDeficienciaSindromeAsperger IS TRUE THEN 1
+            WHEN A.StDeficienciaSindromeRett IS TRUE THEN 1
+            WHEN A.StDeficienciaAutismoInfantil IS TRUE THEN 1
+            WHEN A.StDeficienciaTrastornoDesintegrativo IS TRUE THEN 1
+            WHEN A.StDeficienciaAltasHabilidades IS TRUE THEN 1
+       ELSE 0 END AS StDeficiencia,
+
+       CASE WHEN A.StFalecido IS TRUE THEN 1 ELSE 0 END AS StFalecido,
+
+       CASE WHEN A.StRecursoAuxilioLedor IS TRUE THEN 1
+            WHEN A.StRecursoAuxilioTranscricao IS TRUE THEN 1
+            WHEN A.StRecursoGuiaInterprete IS TRUE THEN 1
+            WHEN A.StRecursoTradutorInterpreteDeLibras IS TRUE THEN 1
+            WHEN A.StRecursoLeituraLabial IS TRUE THEN 1
+            WHEN A.StRecursoMaterialDidaticoProvaBraille IS TRUE THEN 1
+            WHEN A.StRecursoProvaAmpliada IS TRUE THEN 1
+            WHEN A.StRecursoProvaSuperampliada IS TRUE THEN 1
+            WHEN A.StRecursoCdComAudio IS TRUE THEN 1
+            WHEN A.StRecursoLinguaPortuguesaSegundaLingua IS TRUE THEN 1
+            WHEN A.StRecursoProvaEmVideo IS TRUE THEN 1
+            WHEN A.StPermiteUsoImagem IS TRUE THEN 1
+            WHEN A.StEstrangeiro IS TRUE THEN 1
+       ELSE 0 END AS StNecessitaRecurso,
+
+       DATE(D.DataSituacaoAtivo) AS DataAtivacaoUltimaTurma,
+       DATE(D.DataSituacaoInativo) AS DataInativacaoUltimaTurma,
+       DATE(D.DataHoraEfetivacaoMatricula) AS DataMatriculaUltimaTurma,
+       K.NomeTurma AS NomeUltimaTurma,
+       K.SiglaTurma AS SiglaUltimaTurma,
+       K.NomeSerie AS NomeUltimaSerie,
+       K.NomePeriodo AS NomeUltimoPeriodo,
+       P.NomeDisciplina AS NomeDisciplinaUltimoPeriodo,
+       R.NomeCurso NomeDisciplicaUltimoPeriodo,
+       E.SituacaoAlunoTurma AS SituacaoAlunoUltimaTurma,
+       J.CodigoSerie AS CodigoSerieUltimaTurma,
+       J.AnoConclusao AS AnoConclusaoUltimaTurma,
+       J.ResultadoFinal AS ResultadoFinalUltimaTurma,
+
+       DATE(L.DataSituacaoAtivo) AS DataAtivacaoPimeiraTurma,
+       DATE(L.DataSituacaoInativo) AS DataInativacaoPrimeiraTurma,
+       DATE(L.DataHoraEfetivacaoMatricula) AS DataMatriculaPrimeiraTurma,
+       N.NomeTurma AS NomePrimeiraTurma,
+       N.SiglaTurma AS SiglaPrimeiraTurma,
+       N.NomeSerie AS NomePrimeiraSerie,
+       N.NomePeriodo AS NomePrimeiroPeriodo,
+       Q.NomeDisciplina AS NomeDisciplinaPrimeiroPeriodo,
+       S.NomeCurso AS NomeCursoPrimeiroPeriodo,
+       M.SituacaoAlunoTurma AS SituacaoAlunoPrimeiraTurma,
+       O.CodigoSerie AS CodigoSeriePrimeiraTurma,
+       O.AnoConclusao AS AnoConclusaoPrimeiraTurma,
+       O.ResultadoFinal AS ResultadoFinalPrimeiraTurma,
+
+       DATE(F.Data) AS DataPirmeiraEducacaoInfantil,
+       G.SituacaoAlunoTurma AS SituacaoAlunoTurmaPrimeiraEducacaoInfantil,
+       DATE(H.Data) AS DataUltimaEducacaoInfantil,
+       I.SituacaoAlunoTurma AS SituacaoAlunoTurmaUltimaEducacaoInfantil,
+
+
+
+FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAluno` A
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbResponsavel` B
+ON A.IdResponsavel = B.IdResponsavel
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbTipoResponsavel` C
+ON A.IdTipoResponsavel = C.IdTipoResponsavel
+
+LEFT JOIN (SELECT IdTurma,
+                  IdAluno,
+                  IdSituacaoAlunoTurma,
+                  DataSituacaoAtivo,
+                  DataSituacaoInativo,
+                  DataHoraEfetivacaoMatricula
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAlunoTurma`
+           QUALIFY ROW_NUMBER() OVER (PARTITION BY IdAluno ORDER BY DataHoraEfetivacaoMatricula DESC) = 1) D
+ON A.IdAluno = D.IdAluno
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbSituacaoAlunoTurma` E
+ON D.IDSituacaoAlunoTurma = E.IdSituacaoAlunoTurma
+
+LEFT JOIN (SELECT IdAluno,
+                  IdTurma,
+                  Data
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAlunoRotinaEducacaoInfantil`
+           QUALIFY ROW_NUMBER() OVER (PARTITION BY IdAluno ORDER BY Data ASC) = 1) F
+ON A.IdAluno = F.IdAluno
+
+LEFT JOIN (SELECT IdTurma,
+                  IdAluno,
+                  DataSituacaoAtivo,
+                  DataSituacaoInativo,
+                  DataHoraEfetivacaoMatricula,
+                  BB.SituacaoAlunoTurma
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAlunoTurma` AA
+           INNER JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbSituacaoAlunoTurma` BB
+           ON AA.IdSituacaoAlunoTurma = BB.IdSituacaoAlunoTurma) G
+ON A.IdAluno = G.IdAluno AND F.IdTurma = G.IdTurma
+
+LEFT JOIN (SELECT IdAluno,
+                  IdTurma,
+                  Data
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAlunoRotinaEducacaoInfantil`
+           QUALIFY ROW_NUMBER() OVER (PARTITION BY IdAluno ORDER BY Data DESC) = 1) H
+ON A.IdAluno = H.IdAluno
+
+LEFT JOIN (SELECT IdTurma,
+                  IdAluno,
+                  DataSituacaoAtivo,
+                  DataSituacaoInativo,
+                  DataHoraEfetivacaoMatricula,
+                  BB.SituacaoAlunoTurma
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAlunoTurma` AA
+           INNER JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbSituacaoAlunoTurma` BB
+           ON AA.IdSituacaoAlunoTurma = BB.IdSituacaoAlunoTurma) I
+ON A.IdAluno = I.IdAluno AND H.IdTurma = I.IdTurma
+
+LEFT JOIN (SELECT *
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbTurma` AA
+           INNER JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TB_SERIE` BB
+           ON AA.IdSerie = BB.IdSerie
+           INNER JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbPeriodo` CC
+           ON AA.IdPeriodo = CC.IdPeriodo) K
+ON D.IdTurma = K.IdTurma
+
+LEFT JOIN (SELECT *
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbHistorico`
+           QUALIFY ROW_NUMBER() OVER (PARTITION BY IdAluno, CodigoSerie ORDER BY AnoConclusao DESC) = 1) J
+ON A.IdAluno = J.IdAluno AND K.CodigoSerie = J.CodigoSerie
+
+LEFT JOIN (SELECT IdTurma,
+                  IdAluno,
+                  IdSituacaoAlunoTurma,
+                  DataSituacaoAtivo,
+                  DataSituacaoInativo,
+                  DataHoraEfetivacaoMatricula
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbAlunoTurma`
+           QUALIFY ROW_NUMBER() OVER (PARTITION BY IdAluno ORDER BY DataHoraEfetivacaoMatricula ASC) = 1) L
+ON A.IdAluno = L.IdAluno
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbSituacaoAlunoTurma` M
+ON L.IDSituacaoAlunoTurma = M.IdSituacaoAlunoTurma
+
+LEFT JOIN (SELECT *
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbTurma` AA
+           INNER JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TB_SERIE` BB
+           ON AA.IdSerie = BB.IdSerie
+           INNER JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbPeriodo` CC
+           ON AA.IdPeriodo = CC.IdPeriodo) N
+ON L.IdTurma = N.IdTurma
+
+LEFT JOIN (SELECT *
+           FROM `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbHistorico`
+           QUALIFY ROW_NUMBER() OVER (PARTITION BY IdAluno, CodigoSerie ORDER BY AnoConclusao DESC) = 1) O
+ON A.IdAluno = O.IdAluno AND N.CodigoSerie = O.CodigoSerie
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbDisciplina` P
+ON K.IdDisciplina = P.IdDisciplina
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbDisciplina` Q
+ON N.IdDisciplina = Q.IdDisciplina
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbCursoFases` R
+ON K.IdCurso = R.IdCurso
+
+LEFT JOIN `dotzcloud-datalabs-analytics.GOVERNANCA_TEMP.POS_TbCursoFases` S
+ON N.IdCurso = S.IdCurso
+
+ORDER BY IdAluno DESC
