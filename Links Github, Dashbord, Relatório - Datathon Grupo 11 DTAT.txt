@@ -1,7 +1,0 @@
-Pós-Tech Data Analytics - FIAP
-
-GRUPO 11 DTAT - Gabriel Reis e Gustavo Andrade
-
-Github: https://github.com/GabrielR10/Datathon-Tech-Challenge-Fase-5
-
-Dashboard no Looker Studio: https://lookerstudio.google.com/reporting/55ca43ed-b614-40f6-bf59-89d57f1b825c/page/ox38D
